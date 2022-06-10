@@ -1,25 +1,40 @@
-module DecodingJson exposing (main)
+module Page.ListPosts exposing (..)
 
-import Browser
 import Html exposing (..)
-import Html.Attributes exposing (href)
+import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Http
-import Json.Decode exposing (Decoder, int, list, string, succeed)
-import Json.Decode.Pipeline exposing (required)
-import RemoteData exposing (RemoteData(..), WebData)
-
-
-type alias Post =
-    { id : Int, title : String, authorName : String, authorUrl : String }
-
-
-
--- or WebData (List Post)
+import Post exposing (Post, idToString, postsDecoder)
+import RemoteData exposing (WebData)
 
 
 type alias Model =
-    { posts : RemoteData Http.Error (List Post) }
+    { posts : WebData (List Post) }
+
+
+type Msg
+    = FetchPosts
+    | PostsReceived (WebData (List Post))
+
+
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( { posts = RemoteData.Loading }, fetchPosts )
+
+
+fetchPosts : Cmd Msg
+fetchPosts =
+    Http.get { url = "http://localhost:5019/posts", expect = postsDecoder |> Http.expectJson (RemoteData.fromResult >> PostsReceived) }
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        FetchPosts ->
+            ( { model | posts = RemoteData.Loading }, fetchPosts )
+
+        PostsReceived response ->
+            ( { model | posts = response }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -93,41 +108,12 @@ viewPost : Post -> Html Msg
 viewPost post =
     tr []
         [ td []
-            [ text (String.fromInt post.id) ]
+            [ text (idToString post.id) ]
         , td []
             [ text post.title ]
         , td []
             [ a [ href post.authorUrl ] [ text post.authorName ] ]
         ]
-
-
-type Msg
-    = FetchPosts
-    | DataReceived (WebData (List Post))
-
-
-postDecoder : Decoder Post
-postDecoder =
-    succeed Post
-        |> required "id" int
-        |> required "title" string
-        |> required "authorName" string
-        |> required "authorUrl" string
-
-
-fetchPosts : Cmd Msg
-fetchPosts =
-    Http.get { url = "http://localhost:5019/posts", expect = list postDecoder |> Http.expectJson (RemoteData.fromResult >> DataReceived) }
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        FetchPosts ->
-            ( { model | posts = RemoteData.Loading }, fetchPosts )
-
-        DataReceived response ->
-            ( { model | posts = response }, Cmd.none )
 
 
 buildErrorMessage : Http.Error -> String
@@ -147,18 +133,3 @@ buildErrorMessage httpError =
 
         Http.BadBody message ->
             message
-
-
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( { posts = RemoteData.Loading }, fetchPosts )
-
-
-main : Program () Model Msg
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = \_ -> Sub.none
-        }
