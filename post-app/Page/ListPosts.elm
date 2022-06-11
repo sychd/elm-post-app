@@ -1,5 +1,6 @@
 module Page.ListPosts exposing (Model, Msg, init, update, view)
 
+import Error exposing (buildErrorMessage)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
@@ -106,6 +107,10 @@ viewTableHeader =
 
 viewPost : Post -> Html Msg
 viewPost post =
+    let
+        postPath =
+            "/posts/" ++ Post.idToString post.id
+    in
     tr []
         [ td []
             [ text (idToString post.id) ]
@@ -113,23 +118,6 @@ viewPost post =
             [ text post.title ]
         , td []
             [ a [ href post.authorUrl ] [ text post.authorName ] ]
+        , td []
+            [ a [ href postPath ] [ text "Edit" ] ]
         ]
-
-
-buildErrorMessage : Http.Error -> String
-buildErrorMessage httpError =
-    case httpError of
-        Http.BadUrl message ->
-            message
-
-        Http.Timeout ->
-            "Server is taking too long to respond. Please try again later."
-
-        Http.NetworkError ->
-            "Unable to reach server."
-
-        Http.BadStatus statusCode ->
-            "Request failed with status code: " ++ String.fromInt statusCode
-
-        Http.BadBody message ->
-            message

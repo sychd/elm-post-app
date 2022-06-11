@@ -5372,6 +5372,12 @@ var $elm$core$Task$perform = F2(
 	});
 var $elm$browser$Browser$application = _Browser_application;
 var $author$project$Main$NotFoundPage = {$: 'NotFoundPage'};
+var $author$project$Main$EditPage = function (a) {
+	return {$: 'EditPage', a: a};
+};
+var $author$project$Main$EditPageMsg = function (a) {
+	return {$: 'EditPageMsg', a: a};
+};
 var $author$project$Main$ListPage = function (a) {
 	return {$: 'ListPage', a: a};
 };
@@ -5379,9 +5385,8 @@ var $author$project$Main$ListPageMsg = function (a) {
 	return {$: 'ListPageMsg', a: a};
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $krisajenkins$remotedata$RemoteData$Loading = {$: 'Loading'};
-var $author$project$Page$ListPosts$PostsReceived = function (a) {
-	return {$: 'PostsReceived', a: a};
+var $author$project$Page$EditPost$PostReceived = function (a) {
+	return {$: 'PostReceived', a: a};
 };
 var $elm$core$Basics$composeR = F3(
 	function (f, g, x) {
@@ -6185,7 +6190,10 @@ var $elm$http$Http$get = function (r) {
 	return $elm$http$Http$request(
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
-var $elm$json$Json$Decode$list = _Json_decodeList;
+var $author$project$Post$idToString = function (_v0) {
+	var id = _v0.a;
+	return $elm$core$String$fromInt(id);
+};
 var $author$project$Post$Post = F4(
 	function (id, title, authorName, authorUrl) {
 		return {authorName: authorName, authorUrl: authorUrl, id: id, title: title};
@@ -6222,6 +6230,30 @@ var $author$project$Post$postDecoder = A3(
 				'id',
 				$author$project$Post$idDecoder,
 				$elm$json$Json$Decode$succeed($author$project$Post$Post)))));
+var $author$project$Page$EditPost$fetchPost = function (postId) {
+	return $elm$http$Http$get(
+		{
+			expect: A2(
+				$elm$http$Http$expectJson,
+				A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Page$EditPost$PostReceived),
+				$author$project$Post$postDecoder),
+			url: 'http://localhost:5019/posts/' + $author$project$Post$idToString(postId)
+		});
+};
+var $krisajenkins$remotedata$RemoteData$Loading = {$: 'Loading'};
+var $author$project$Page$EditPost$initialModel = function (navKey) {
+	return {navKey: navKey, post: $krisajenkins$remotedata$RemoteData$Loading, saveError: $elm$core$Maybe$Nothing};
+};
+var $author$project$Page$EditPost$init = F2(
+	function (postId, navKey) {
+		return _Utils_Tuple2(
+			$author$project$Page$EditPost$initialModel(navKey),
+			$author$project$Page$EditPost$fetchPost(postId));
+	});
+var $author$project$Page$ListPosts$PostsReceived = function (a) {
+	return {$: 'PostsReceived', a: a};
+};
+var $elm$json$Json$Decode$list = _Json_decodeList;
 var $author$project$Post$postsDecoder = $elm$json$Json$Decode$list($author$project$Post$postDecoder);
 var $author$project$Page$ListPosts$fetchPosts = $elm$http$Http$get(
 	{
@@ -6243,15 +6275,24 @@ var $author$project$Main$initCurrentPage = function (_v0) {
 	var existingCmds = _v0.b;
 	var _v1 = function () {
 		var _v2 = model.route;
-		if (_v2.$ === 'NotFound') {
-			return _Utils_Tuple2($author$project$Main$NotFoundPage, $elm$core$Platform$Cmd$none);
-		} else {
-			var _v3 = $author$project$Page$ListPosts$init(_Utils_Tuple0);
-			var pageModel = _v3.a;
-			var pageCmds = _v3.b;
-			return _Utils_Tuple2(
-				$author$project$Main$ListPage(pageModel),
-				A2($elm$core$Platform$Cmd$map, $author$project$Main$ListPageMsg, pageCmds));
+		switch (_v2.$) {
+			case 'NotFound':
+				return _Utils_Tuple2($author$project$Main$NotFoundPage, $elm$core$Platform$Cmd$none);
+			case 'Posts':
+				var _v3 = $author$project$Page$ListPosts$init(_Utils_Tuple0);
+				var pageModel = _v3.a;
+				var pageCmds = _v3.b;
+				return _Utils_Tuple2(
+					$author$project$Main$ListPage(pageModel),
+					A2($elm$core$Platform$Cmd$map, $author$project$Main$ListPageMsg, pageCmds));
+			default:
+				var postId = _v2.a;
+				var _v4 = A2($author$project$Page$EditPost$init, postId, model.navKey);
+				var pageModel = _v4.a;
+				var pageCmds = _v4.b;
+				return _Utils_Tuple2(
+					$author$project$Main$EditPage(pageModel),
+					A2($elm$core$Platform$Cmd$map, $author$project$Main$EditPageMsg, pageCmds));
 		}
 	}();
 	var currentPage = _v1.a;
@@ -6265,6 +6306,9 @@ var $author$project$Main$initCurrentPage = function (_v0) {
 				[existingCmds, mappedPageCmds])));
 };
 var $author$project$Route$NotFound = {$: 'NotFound'};
+var $author$project$Route$Post = function (a) {
+	return {$: 'Post', a: a};
+};
 var $author$project$Route$Posts = {$: 'Posts'};
 var $elm$url$Url$Parser$Parser = function (a) {
 	return {$: 'Parser', a: a};
@@ -6272,6 +6316,58 @@ var $elm$url$Url$Parser$Parser = function (a) {
 var $elm$url$Url$Parser$State = F5(
 	function (visited, unvisited, params, frag, value) {
 		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
+	});
+var $elm$url$Url$Parser$custom = F2(
+	function (tipe, stringToSomething) {
+		return $elm$url$Url$Parser$Parser(
+			function (_v0) {
+				var visited = _v0.visited;
+				var unvisited = _v0.unvisited;
+				var params = _v0.params;
+				var frag = _v0.frag;
+				var value = _v0.value;
+				if (!unvisited.b) {
+					return _List_Nil;
+				} else {
+					var next = unvisited.a;
+					var rest = unvisited.b;
+					var _v2 = stringToSomething(next);
+					if (_v2.$ === 'Just') {
+						var nextValue = _v2.a;
+						return _List_fromArray(
+							[
+								A5(
+								$elm$url$Url$Parser$State,
+								A2($elm$core$List$cons, next, visited),
+								rest,
+								params,
+								frag,
+								value(nextValue))
+							]);
+					} else {
+						return _List_Nil;
+					}
+				}
+			});
+	});
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$Post$idParser = A2(
+	$elm$url$Url$Parser$custom,
+	'POSTID',
+	function (postId) {
+		return A2(
+			$elm$core$Maybe$map,
+			$author$project$Post$PostId,
+			$elm$core$String$toInt(postId));
 	});
 var $elm$url$Url$Parser$mapState = F2(
 	function (func, _v0) {
@@ -6359,6 +6455,18 @@ var $elm$url$Url$Parser$s = function (str) {
 			}
 		});
 };
+var $elm$url$Url$Parser$slash = F2(
+	function (_v0, _v1) {
+		var parseBefore = _v0.a;
+		var parseAfter = _v1.a;
+		return $elm$url$Url$Parser$Parser(
+			function (state) {
+				return A2(
+					$elm$core$List$concatMap,
+					parseAfter,
+					parseBefore(state));
+			});
+	});
 var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
 	function (state) {
 		return _List_fromArray(
@@ -6371,7 +6479,14 @@ var $author$project$Route$matchRoute = $elm$url$Url$Parser$oneOf(
 			A2(
 			$elm$url$Url$Parser$map,
 			$author$project$Route$Posts,
-			$elm$url$Url$Parser$s('posts'))
+			$elm$url$Url$Parser$s('posts')),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Post,
+			A2(
+				$elm$url$Url$Parser$slash,
+				$elm$url$Url$Parser$s('posts'),
+				$author$project$Post$idParser))
 		]));
 var $elm$url$Url$Parser$getFirstMatch = function (states) {
 	getFirstMatch:
@@ -6555,6 +6670,221 @@ var $elm$url$Url$toString = function (url) {
 					_Utils_ap(http, url.host)),
 				url.path)));
 };
+var $author$project$Page$EditPost$Name = {$: 'Name'};
+var $author$project$Page$EditPost$Title = {$: 'Title'};
+var $author$project$Page$EditPost$Url = {$: 'Url'};
+var $author$project$Error$buildErrorMessage = function (httpError) {
+	switch (httpError.$) {
+		case 'BadUrl':
+			var message = httpError.a;
+			return message;
+		case 'Timeout':
+			return 'Server is taking too long to respond. Please try again later.';
+		case 'NetworkError':
+			return 'Unable to reach server.';
+		case 'BadStatus':
+			var statusCode = httpError.a;
+			return 'Request failed with status code: ' + $elm$core$String$fromInt(statusCode);
+		default:
+			var message = httpError.a;
+			return message;
+	}
+};
+var $author$project$Route$routeToString = function (route) {
+	switch (route.$) {
+		case 'NotFound':
+			return '/not-found';
+		case 'Posts':
+			return '/posts';
+		default:
+			var postId = route.a;
+			return '/posts/' + $author$project$Post$idToString(postId);
+	}
+};
+var $author$project$Route$pushUrl = F2(
+	function (route, navKey) {
+		return A2(
+			$elm$browser$Browser$Navigation$pushUrl,
+			navKey,
+			$author$project$Route$routeToString(route));
+	});
+var $author$project$Page$EditPost$PostSaved = function (a) {
+	return {$: 'PostSaved', a: a};
+};
+var $elm$http$Http$jsonBody = function (value) {
+	return A2(
+		_Http_pair,
+		'application/json',
+		A2($elm$json$Json$Encode$encode, 0, value));
+};
+var $elm$json$Json$Encode$int = _Json_wrap;
+var $author$project$Post$encodeId = function (_v0) {
+	var id = _v0.a;
+	return $elm$json$Json$Encode$int(id);
+};
+var $elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, obj) {
+					var k = _v0.a;
+					var v = _v0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $author$project$Post$postEncoder = function (post) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'id',
+				$author$project$Post$encodeId(post.id)),
+				_Utils_Tuple2(
+				'title',
+				$elm$json$Json$Encode$string(post.title)),
+				_Utils_Tuple2(
+				'authorName',
+				$elm$json$Json$Encode$string(post.authorName)),
+				_Utils_Tuple2(
+				'authorUrl',
+				$elm$json$Json$Encode$string(post.authorUrl))
+			]));
+};
+var $author$project$Page$EditPost$savePost = function (post) {
+	if (post.$ === 'Success') {
+		var postData = post.a;
+		var postUrl = 'http://localhost:5019/posts/' + $author$project$Post$idToString(postData.id);
+		return $elm$http$Http$request(
+			{
+				body: $elm$http$Http$jsonBody(
+					$author$project$Post$postEncoder(postData)),
+				expect: A2($elm$http$Http$expectJson, $author$project$Page$EditPost$PostSaved, $author$project$Post$postDecoder),
+				headers: _List_Nil,
+				method: 'PATCH',
+				timeout: $elm$core$Maybe$Nothing,
+				tracker: $elm$core$Maybe$Nothing,
+				url: postUrl
+			});
+	} else {
+		return $elm$core$Platform$Cmd$none;
+	}
+};
+var $krisajenkins$remotedata$RemoteData$succeed = $krisajenkins$remotedata$RemoteData$Success;
+var $krisajenkins$remotedata$RemoteData$NotAsked = {$: 'NotAsked'};
+var $krisajenkins$remotedata$RemoteData$map = F2(
+	function (f, data) {
+		switch (data.$) {
+			case 'Success':
+				var value = data.a;
+				return $krisajenkins$remotedata$RemoteData$Success(
+					f(value));
+			case 'Loading':
+				return $krisajenkins$remotedata$RemoteData$Loading;
+			case 'NotAsked':
+				return $krisajenkins$remotedata$RemoteData$NotAsked;
+			default:
+				var error = data.a;
+				return $krisajenkins$remotedata$RemoteData$Failure(error);
+		}
+	});
+var $author$project$Page$EditPost$updateField = F3(
+	function (postData, field, value) {
+		var updFn = function (fn) {
+			return A2($krisajenkins$remotedata$RemoteData$map, fn, postData);
+		};
+		switch (field.$) {
+			case 'Name':
+				return updFn(
+					function (post) {
+						return _Utils_update(
+							post,
+							{authorName: value});
+					});
+			case 'Title':
+				return updFn(
+					function (post) {
+						return _Utils_update(
+							post,
+							{title: value});
+					});
+			default:
+				return updFn(
+					function (post) {
+						return _Utils_update(
+							post,
+							{authorUrl: value});
+					});
+		}
+	});
+var $author$project$Page$EditPost$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'PostReceived':
+				var post = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{post: post}),
+					$elm$core$Platform$Cmd$none);
+			case 'UpdateTitle':
+				var value = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							post: A3($author$project$Page$EditPost$updateField, model.post, $author$project$Page$EditPost$Title, value)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'UpdateAuthorName':
+				var value = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							post: A3($author$project$Page$EditPost$updateField, model.post, $author$project$Page$EditPost$Name, value)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'UpdateAuthorUrl':
+				var value = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							post: A3($author$project$Page$EditPost$updateField, model.post, $author$project$Page$EditPost$Url, value)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'SavePost':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$EditPost$savePost(model.post));
+			default:
+				if (msg.a.$ === 'Ok') {
+					var postData = msg.a.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								post: $krisajenkins$remotedata$RemoteData$succeed(postData),
+								saveError: $elm$core$Maybe$Nothing
+							}),
+						A2($author$project$Route$pushUrl, $author$project$Route$Posts, model.navKey));
+				} else {
+					var error = msg.a.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								saveError: $elm$core$Maybe$Just(
+									$author$project$Error$buildErrorMessage(error))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+		}
+	});
 var $author$project$Page$ListPosts$update = F2(
 	function (msg, model) {
 		if (msg.$ === 'FetchPosts') {
@@ -6575,50 +6905,71 @@ var $author$project$Page$ListPosts$update = F2(
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		var _v0 = _Utils_Tuple2(msg, model.page);
-		switch (_v0.a.$) {
-			case 'ListPageMsg':
-				if (_v0.b.$ === 'ListPage') {
-					var subMsg = _v0.a.a;
-					var pageModel = _v0.b.a;
-					var _v1 = A2($author$project$Page$ListPosts$update, subMsg, pageModel);
-					var updatedPageModel = _v1.a;
-					var updatedCmd = _v1.b;
-					return _Utils_Tuple2(
-						_Utils_update(
+		_v0$4:
+		while (true) {
+			switch (_v0.a.$) {
+				case 'ListPageMsg':
+					if (_v0.b.$ === 'ListPage') {
+						var subMsg = _v0.a.a;
+						var pageModel = _v0.b.a;
+						var _v1 = A2($author$project$Page$ListPosts$update, subMsg, pageModel);
+						var updatedPageModel = _v1.a;
+						var updatedCmd = _v1.b;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									page: $author$project$Main$ListPage(updatedPageModel)
+								}),
+							A2($elm$core$Platform$Cmd$map, $author$project$Main$ListPageMsg, updatedCmd));
+					} else {
+						break _v0$4;
+					}
+				case 'EditPageMsg':
+					if (_v0.b.$ === 'EditPage') {
+						var subMsg = _v0.a.a;
+						var pageModel = _v0.b.a;
+						var _v2 = A2($author$project$Page$EditPost$update, subMsg, pageModel);
+						var updatedPageModel = _v2.a;
+						var updatedCmd = _v2.b;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									page: $author$project$Main$EditPage(updatedPageModel)
+								}),
+							A2($elm$core$Platform$Cmd$map, $author$project$Main$EditPageMsg, updatedCmd));
+					} else {
+						break _v0$4;
+					}
+				case 'LinkClicked':
+					var urlRequest = _v0.a.a;
+					if (urlRequest.$ === 'Internal') {
+						var url = urlRequest.a;
+						return _Utils_Tuple2(
 							model,
-							{
-								page: $author$project$Main$ListPage(updatedPageModel)
-							}),
-						A2($elm$core$Platform$Cmd$map, $author$project$Main$ListPageMsg, updatedCmd));
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'LinkClicked':
-				var urlRequest = _v0.a.a;
-				if (urlRequest.$ === 'Internal') {
-					var url = urlRequest.a;
-					return _Utils_Tuple2(
-						model,
-						A2(
-							$elm$browser$Browser$Navigation$pushUrl,
-							model.navKey,
-							$elm$url$Url$toString(url)));
-				} else {
-					var url = urlRequest.a;
-					return _Utils_Tuple2(
-						model,
-						$elm$browser$Browser$Navigation$load(url));
-				}
-			default:
-				var url = _v0.a.a;
-				var newRoute = $author$project$Route$parseUrl(url);
-				return $author$project$Main$initCurrentPage(
-					_Utils_Tuple2(
-						_Utils_update(
+							A2(
+								$elm$browser$Browser$Navigation$pushUrl,
+								model.navKey,
+								$elm$url$Url$toString(url)));
+					} else {
+						var url = urlRequest.a;
+						return _Utils_Tuple2(
 							model,
-							{route: newRoute}),
-						$elm$core$Platform$Cmd$none));
+							$elm$browser$Browser$Navigation$load(url));
+					}
+				default:
+					var url = _v0.a.a;
+					var newRoute = $author$project$Route$parseUrl(url);
+					return $author$project$Main$initCurrentPage(
+						_Utils_Tuple2(
+							_Utils_update(
+								model,
+								{route: newRoute}),
+							$elm$core$Platform$Cmd$none));
+			}
 		}
+		return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 	});
 var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
@@ -6633,8 +6984,20 @@ var $author$project$Main$notFoundView = A2(
 			$elm$html$Html$text('Oops! The page you requested was not found!')
 		]));
 var $elm$html$Html$div = _VirtualDom_node('div');
-var $author$project$Page$ListPosts$FetchPosts = {$: 'FetchPosts'};
+var $author$project$Page$EditPost$SavePost = {$: 'SavePost'};
+var $author$project$Page$EditPost$UpdateAuthorName = function (a) {
+	return {$: 'UpdateAuthorName', a: a};
+};
+var $author$project$Page$EditPost$UpdateAuthorUrl = function (a) {
+	return {$: 'UpdateAuthorUrl', a: a};
+};
+var $author$project$Page$EditPost$UpdateTitle = function (a) {
+	return {$: 'UpdateTitle', a: a};
+};
+var $elm$html$Html$br = _VirtualDom_node('br');
 var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$html$Html$form = _VirtualDom_node('form');
+var $elm$html$Html$input = _VirtualDom_node('input');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -6652,6 +7015,202 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
+var $elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var $elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$html$Html$Events$targetValue = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	$elm$json$Json$Decode$string);
+var $elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			$elm$json$Json$Decode$map,
+			$elm$html$Html$Events$alwaysStop,
+			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
+};
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
+var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
+var $author$project$Page$EditPost$editForm = function (post) {
+	return A2(
+		$elm$html$Html$form,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Title'),
+						A2($elm$html$Html$br, _List_Nil, _List_Nil),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$value(post.title),
+								$elm$html$Html$Events$onInput($author$project$Page$EditPost$UpdateTitle)
+							]),
+						_List_Nil)
+					])),
+				A2($elm$html$Html$br, _List_Nil, _List_Nil),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Author Name'),
+						A2($elm$html$Html$br, _List_Nil, _List_Nil),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$value(post.authorName),
+								$elm$html$Html$Events$onInput($author$project$Page$EditPost$UpdateAuthorName)
+							]),
+						_List_Nil)
+					])),
+				A2($elm$html$Html$br, _List_Nil, _List_Nil),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Author URL'),
+						A2($elm$html$Html$br, _List_Nil, _List_Nil),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$value(post.authorUrl),
+								$elm$html$Html$Events$onInput($author$project$Page$EditPost$UpdateAuthorUrl)
+							]),
+						_List_Nil)
+					])),
+				A2($elm$html$Html$br, _List_Nil, _List_Nil),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('button'),
+								$elm$html$Html$Events$onClick($author$project$Page$EditPost$SavePost)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Submit')
+							]))
+					]))
+			]));
+};
+var $author$project$Page$EditPost$viewFetchError = function (errorMessage) {
+	var errorHeading = 'Couldn\'t fetch post at this time.';
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(errorHeading)
+					])),
+				$elm$html$Html$text('Error: ' + errorMessage)
+			]));
+};
+var $author$project$Page$EditPost$viewPost = function (post) {
+	switch (post.$) {
+		case 'NotAsked':
+			return $elm$html$Html$text('');
+		case 'Loading':
+			return A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Loading Post...')
+					]));
+		case 'Success':
+			var postData = post.a;
+			return $author$project$Page$EditPost$editForm(postData);
+		default:
+			var httpError = post.a;
+			return $author$project$Page$EditPost$viewFetchError(
+				$author$project$Error$buildErrorMessage(httpError));
+	}
+};
+var $author$project$Page$EditPost$viewSaveError = function (maybeError) {
+	if (maybeError.$ === 'Just') {
+		var error = maybeError.a;
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$h3,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Couldn\'t save post at this time.')
+						])),
+					$elm$html$Html$text('Error: ' + error)
+				]));
+	} else {
+		return $elm$html$Html$text('');
+	}
+};
+var $author$project$Page$EditPost$view = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Edit post')
+					])),
+				$author$project$Page$EditPost$viewPost(model.post),
+				$author$project$Page$EditPost$viewSaveError(model.saveError)
+			]));
+};
+var $author$project$Page$ListPosts$FetchPosts = {$: 'FetchPosts'};
 var $author$project$Page$ListPosts$refetchPostsButton = function (model) {
 	var _v0 = model.posts;
 	if (_v0.$ === 'Loading') {
@@ -6667,23 +7226,6 @@ var $author$project$Page$ListPosts$refetchPostsButton = function (model) {
 				[
 					$elm$html$Html$text('Refetch posts!')
 				]));
-	}
-};
-var $author$project$Page$ListPosts$buildErrorMessage = function (httpError) {
-	switch (httpError.$) {
-		case 'BadUrl':
-			var message = httpError.a;
-			return message;
-		case 'Timeout':
-			return 'Server is taking too long to respond. Please try again later.';
-		case 'NetworkError':
-			return 'Unable to reach server.';
-		case 'BadStatus':
-			var statusCode = httpError.a;
-			return 'Request failed with status code: ' + $elm$core$String$fromInt(statusCode);
-		default:
-			var message = httpError.a;
-			return message;
 	}
 };
 var $author$project$Page$ListPosts$viewError = function (errorMessage) {
@@ -6705,27 +7247,16 @@ var $author$project$Page$ListPosts$viewError = function (errorMessage) {
 };
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $elm$html$Html$a = _VirtualDom_node('a');
-var $elm$json$Json$Encode$string = _Json_wrap;
-var $elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$string(string));
-	});
 var $elm$html$Html$Attributes$href = function (url) {
 	return A2(
 		$elm$html$Html$Attributes$stringProperty,
 		'href',
 		_VirtualDom_noJavaScriptUri(url));
 };
-var $author$project$Post$idToString = function (_v0) {
-	var id = _v0.a;
-	return $elm$core$String$fromInt(id);
-};
 var $elm$html$Html$td = _VirtualDom_node('td');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
 var $author$project$Page$ListPosts$viewPost = function (post) {
+	var postPath = '/posts/' + $author$project$Post$idToString(post.id);
 	return A2(
 		$elm$html$Html$tr,
 		_List_Nil,
@@ -6760,6 +7291,22 @@ var $author$project$Page$ListPosts$viewPost = function (post) {
 						_List_fromArray(
 							[
 								$elm$html$Html$text(post.authorName)
+							]))
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$a,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$href(postPath)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Edit')
 							]))
 					]))
 			]));
@@ -6830,7 +7377,7 @@ var $author$project$Page$ListPosts$viewPostsOrError = function (model) {
 		case 'Failure':
 			var httpError = _v0.a;
 			return $author$project$Page$ListPosts$viewError(
-				$author$project$Page$ListPosts$buildErrorMessage(httpError));
+				$author$project$Error$buildErrorMessage(httpError));
 		default:
 			var posts = _v0.a;
 			return $author$project$Page$ListPosts$viewPosts(posts);
@@ -6848,14 +7395,21 @@ var $author$project$Page$ListPosts$view = function (model) {
 };
 var $author$project$Main$currentView = function (model) {
 	var _v0 = model.page;
-	if (_v0.$ === 'NotFoundPage') {
-		return $author$project$Main$notFoundView;
-	} else {
-		var pageModel = _v0.a;
-		return A2(
-			$elm$html$Html$map,
-			$author$project$Main$ListPageMsg,
-			$author$project$Page$ListPosts$view(pageModel));
+	switch (_v0.$) {
+		case 'NotFoundPage':
+			return $author$project$Main$notFoundView;
+		case 'ListPage':
+			var pageModel = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Main$ListPageMsg,
+				$author$project$Page$ListPosts$view(pageModel));
+		default:
+			var pageModel = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Main$EditPageMsg,
+				$author$project$Page$EditPost$view(pageModel));
 	}
 };
 var $author$project$Main$view = function (model) {
