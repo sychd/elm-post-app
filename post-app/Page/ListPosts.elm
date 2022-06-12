@@ -65,20 +65,28 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ refetchPostsButton model
+        [ viewControlButtons model
         , viewPostsOrError model
         , viewDeleteError model.deleteError
         ]
 
 
-refetchPostsButton : Model -> Html Msg
-refetchPostsButton model =
+viewControlButtons : Model -> Html Msg
+viewControlButtons model =
     case model.posts of
         RemoteData.Loading ->
             text ""
 
         _ ->
-            button [ onClick FetchPosts ] [ text "Refetch posts!" ]
+            div []
+                [ button [ onClick FetchPosts ] [ text "Refetch posts!" ]
+                , br [] []
+                , br [] []
+                , button []
+                    [ a [ href "/posts/new" ]
+                        [ text "Create new post" ]
+                    ]
+                ]
 
 
 viewPostsOrError : Model -> Html Msg
